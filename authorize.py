@@ -13,7 +13,7 @@ db_policy_types = {
                     'forbid_privileged':
                     {
                         'target_actions': ['RegisterTaskDefinition'],
-                        'failure_message': 'You are not allowed to register a task definition with a priviledged container'
+                        'failure_message': 'You are not allowed to register a task definition with a privileged container'
                     }
                   }
 
@@ -35,13 +35,13 @@ db_policies = [
                 }
             },
             {
-                'type': 'priviledged',
+                'type': 'forbid_privileged',
                 'target_group': 'group1',
                 'args':{}
             }
         ]
 
-def policy_priviledged(request,args):
+def policy_forbid_privileged(request,args):
     if 'containerDefinitions' not in request.data:
         return True
     definitions = request.data['containerDefinitions']
