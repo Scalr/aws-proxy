@@ -6,6 +6,9 @@ users = {
     'dummy.user': 'crapineedasigningkey'
 }
 
+def sign(key, msg):
+    return hmac.new(key,msg.encode('utf-8'),hashlib.sha256).digest()
+
 def getSignatureKey(key, dateStamp, regionName, serviceName):
     kDate = sign(('AWS4' + key).encode('utf-8'), dateStamp)
     kRegion = sign(kDate, regionName)
@@ -27,14 +30,14 @@ def extract_from_auth(header, desc):
 def authenticate(request):
     host = request.headers['Host']
     auth = request.headers['Authorization']
-    amz_date = request.headers['X-Amz-Date']
+    amzdate = request.headers['X-Amz-Date']
     print 'Auth:', auth
     algorithm = auth.split(' ')[0]
     if algorithm != 'AWS4-HMAC-SHA256':
         return 'Error: unsupported signing scheme'
     cred = extract_from_auth(auth, 'Credential')
     key_id, credential_scope = cred.split('/', 1)
-    date_stamp, region, service, _ = credential_scope.split('/')
+    datestamp, region, service, _ = credential_scope.split('/')
     if not key_id in users:
         return None
 
@@ -55,6 +58,6 @@ def authenticate(request):
     computed_sig = hmac.new(signing_key, (string_to_sign).encode('utf-8'), hashlib.sha256).hexdigest()
     if computed_sig != given_sig:
         return None
-    return 
+    return key_id 
 
 
