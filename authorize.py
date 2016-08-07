@@ -4,10 +4,40 @@ import authenticate
 db_groups = {
     'dummy.user': [ 'group2']
 }
+
+all_actions = [ 'CreateCluster',
+                'CreateService',
+                'DeleteCluster',
+                'DeleteService',
+                'DeregisterContainerInstance',
+                'DeregisterTaskDefinition',
+                'DescribeClusters',
+                'DescribeContainerInstances',
+                'DescribeServices',
+                'DescribeTaskDefinition',
+                'DescribeTasks',
+                'DiscoverPollEndpoint',
+                'ListClusters',
+                'ListContainerInstances',
+                'ListServices',
+                'ListTaskDefinitionFamilies',
+                'ListTaskDefinitions',
+                'ListTasks',
+                'RegisterContainerInstance',
+                'RegisterTaskDefinition',
+                'RunTask',
+                'StartTask',
+                'StopTask',
+                'SubmitContainerStateChange',
+                'SubmitTaskStateChange',
+                'UpdateContainerAgent',
+                'UpdateService'
+              ]
+
 db_policy_types = {
                     'location':
                     {
-                        'target_actions': ['CreateCluster'],
+                        'target_actions': all_actions,
                         'failure_message': 'You do not have access to this region.'
                     },
                     'forbid_privileged':
@@ -24,13 +54,18 @@ db_policy_types = {
                     {
                         'target_actions': ['RegisterTaskDefinition'],
                         'failure_message': 'You are not allowed to map the requested ports'
+                    },
+                    'cluster_management':
+                    {
+                        'target_actions': ['CreateCluster', 'DeleteCluster', 'DeregisterContainerInstance', 'RegisterContainerInstance'],
+                        'failure_message': 'You are not allowed to perform operations on clusters'
                     }
                   }
 
 db_policies = [
             {
                 'type': 'location',
-                'target_group': 'group1',
+                'target_group': 'group2',
                 'args':
                 {
                     'allowed_locations': ['us-east-1']
@@ -56,13 +91,23 @@ db_policies = [
                 {
                     'ports': ['80','110']
                 }
+            },
+            {
+                'type': 'image_source',
+                'target_group': 'group2',
+                'args': {'sources':['gcr.io']}
+            },
+            {
+                'type': 'cluster_management',
+                'target_group': 'group1',
+                'args': {}
             }
         ]
 
 def policy_authorized_ports(request,args):
     ports = args['ports']
     containerDefs = request.get_json(force=True)['containerDefinitions']
-    port_requested = [portMapping['hostPort'] for cont in containerDefs for portMapping in  cont['portMappings'] ]
+    port_requested = [portMapping['hostPort'] for cont in containerDefs for portMapping in cont['portMappings'] if 'portMapping' in cont ]
     portnum = [x in l for l in [[int(a)]  if '-' not in a else range(int(a.split('-')[0]), int(a.split('-')[1]) + 1) for a in ports ] ]
     return  set(port_requested) < set (portnum)
 
@@ -97,6 +142,9 @@ def policy_image_source(request, args):
         if not source in allowed_sources:
             return False
     return True
+
+def policy_cluster_management(request, args):
+    return False
 
 def authorize(request,username):
     actionName = request.headers['X-Amz-Target'].split('.')[1]
