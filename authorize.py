@@ -9,6 +9,11 @@ db_policy_types = {
                     {
                         'target_actions': ['CreateCluster'],
                         'failure_message': 'You do not have access to this region.'
+                    },
+                    'forbid_privileged':
+                    {
+                        'target_actions': ['RegisterTaskDefinition'],
+                        'failure_message': 'You are not allowed to register a task definition with a priviledged container'
                     }
                   }
 
@@ -18,7 +23,7 @@ db_policies = [
                 'target_group': 'group1',
                 'args':
                 {
-                    'allowed_locations': ['us-east-1no']
+                    'allowed_locations': ['us-east-1']
                 }
             },
             {
@@ -28,8 +33,22 @@ db_policies = [
                 {
                     'allowed_locations': ['us-west-1']
                 }
+            },
+            {
+                'type': 'priviledged',
+                'target_group': 'group1',
+                'args':{}
             }
         ]
+
+def policy_priviledged(request,args):
+    if 'containerDefinitions' not in request.data:
+        return True
+    definitions = request.data['containerDefinitions']
+    for cont in definitions:
+        if cont['priviledged']:
+            return False
+    return True
 
 def get_region_from_request(request):
     authstring = request.headers['Authorization']
