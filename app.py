@@ -24,7 +24,7 @@ def forward_and_resign(request):
     headers = {k:request.headers[k] for k in ['X-Amz-Date', 'X-Amz-Target', 'Content-Type']}
     headers["Authorization"] = auth_hdr
     response = requests.post(aws_endpoint, data=request.data, headers=headers)
-    print response
+    print response.text
     return response
 
 @app.route('/',methods=['POST'])
