@@ -2,7 +2,7 @@ import sys
 import authenticate
 
 db_groups = {
-    'dummy.user': ['group1', 'group2']
+    'dummy.user': [ 'group2']
 }
 db_policy_types = {
                     'location':
@@ -47,11 +47,11 @@ db_policies = [
         ]
 
 def policy_forbid_privileged(request,args):
-    if 'containerDefinitions' not in request.data:
+    if 'containerDefinitions' not in request.get_json(force=True):
         return True
-    definitions = request.data['containerDefinitions']
+    definitions = request.get_json(force=True)['containerDefinitions']
     for cont in definitions:
-        if cont['priviledged']:
+        if 'privileged' in cont and cont['privileged']:
             return False
     return True
 
@@ -68,7 +68,7 @@ def policy_image_source(request, args):
     allowed_sources = args['sources']
     if '*' in allowed_sources:
         return True
-    containerDefs = request.data['containerDefinitions']
+    containerDefs = request.get_json(force=True)['containerDefinitions']
     for c in containerDefs:
         image = c['image']
         if image.find('/') == -1:
