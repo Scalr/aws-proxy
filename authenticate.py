@@ -34,7 +34,7 @@ def authenticate(request):
     print 'Auth:', auth
     algorithm = auth.split(' ')[0]
     if algorithm != 'AWS4-HMAC-SHA256':
-        return 'Error: unsupported signing scheme'
+        raise Exception("Unsupported signature algorithm")
     cred = extract_from_auth(auth, 'Credential')
     key_id, credential_scope = cred.split('/', 1)
     datestamp, region, service, _ = credential_scope.split('/')
@@ -56,14 +56,14 @@ def authenticate(request):
 
     canonical_uri = request.path
     canonical_querystring = request.query_string
-    canonical_headers = '\n'.join(k.lower() + ': ' + v for k, v in sorted(request.headers.items()) if k in signed_headers.split(';')) + '\n'
+    canonical_headers = '\n'.join(k.lower() + ': ' + v for k, v in sorted(request.headers.items()) if k.lower() in signed_headers.split(';')) + '\n'
 
     print canonical_headers
     print canonical_uri
     print canonical_querystring
 
     print request_parameters
-    
+
     payload_hash = hashlib.sha256(request_parameters).hexdigest()
     canonical_request = method + '\n' + canonical_uri + '\n' + canonical_querystring + '\n' + canonical_headers + '\n' + signed_headers + '\n' + payload_hash
     string_to_sign = algorithm + '\n' +  amzdate + '\n' +  credential_scope + '\n' +  hashlib.sha256(canonical_request).hexdigest()
