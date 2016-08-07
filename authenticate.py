@@ -28,22 +28,16 @@ def extract_from_auth(header, desc):
         return header[begin:end]
 
 def authenticate(request):
-    host = request.headers['Host']
     auth = request.headers['Authorization']
     amzdate = request.headers['X-Amz-Date']
-    print 'Auth:', auth
     algorithm = auth.split(' ')[0]
     if algorithm != 'AWS4-HMAC-SHA256':
         raise Exception("Unsupported signature algorithm")
     cred = extract_from_auth(auth, 'Credential')
     key_id, credential_scope = cred.split('/', 1)
     datestamp, region, service, _ = credential_scope.split('/')
-
-    print host, amzdate, key_id, datestamp, region, service
-
     if not key_id in users:
         return None
-
 
     method = request.method
     amz_target = request.headers['X-Amz-Target']
@@ -52,17 +46,9 @@ def authenticate(request):
     signed_headers = extract_from_auth(auth, 'SignedHeaders')
     given_sig = extract_from_auth(auth, 'Signature')
 
-    print method, amz_target, signed_headers
-
     canonical_uri = request.path
     canonical_querystring = request.query_string
     canonical_headers = '\n'.join(k.lower() + ':' + v for k, v in sorted(request.headers.items()) if k.lower() in signed_headers.split(';')) + '\n'
-
-    print canonical_headers
-    print canonical_uri
-    print canonical_querystring
-
-    print request_parameters
 
     payload_hash = hashlib.sha256(request_parameters).hexdigest()
     canonical_request = method + '\n' + canonical_uri + '\n' + canonical_querystring + '\n' + canonical_headers + '\n' + signed_headers + '\n' + payload_hash
@@ -73,4 +59,30 @@ def authenticate(request):
         return None
     return key_id 
 
+def resign(request):
+    auth = request.headers['Authorization']
+    amzdate = request.headers['X-Amz-Date']
+    algorithm = auth.split(' ')[0]
+    cred = extract_from_auth(auth, 'Credential')
+    key_id, credential_scope = cred.split('/', 1)
+    datestamp, region, service, _ = credential_scope.split('/')
 
+    method = request.method
+    amz_target = request.headers['X-Amz-Target']
+    request_parameters = request.data
+    secret_key = os.environ.get('SCALR_SECRET')
+    key_id = os.environ.get('SCALR_KEYID')
+
+    signed_headers = extract_from_auth(auth, 'SignedHeaders')
+
+    canonical_uri = request.path
+    canonical_querystring = request.query_string
+    canonical_headers = '\n'.join(k.lower() + ':' + v for k, v in sorted(request.headers.items()) if k.lower() in signed_headers.split(';')) + '\n'
+
+    payload_hash = hashlib.sha256(request_parameters).hexdigest()
+    canonical_request = method + '\n' + canonical_uri + '\n' + canonical_querystring + '\n' + canonical_headers + '\n' + signed_headers + '\n' + payload_hash
+    string_to_sign = algorithm + '\n' +  amzdate + '\n' +  credential_scope + '\n' +  hashlib.sha256(canonical_request).hexdigest()
+    signing_key = getSignatureKey(secret_key, datestamp, region, service)
+    computed_sig = hmac.new(signing_key, (string_to_sign).encode('utf-8'), hashlib.sha256).hexdigest()
+    authorization_header = algorithm + ' ' + 'Credential=' + key_id + '/' + credential_scope + ', ' + 'SignedHeaders=' + signed_headers + ', ' + 'Signature=' + computed_sig
+    return authorization_header
