@@ -20,7 +20,8 @@ def build_response_not_authorized(request):
     return response
 
 def forward_and_resign(request):
-    auth_hdr = authenticate.resign(request)
+    new_host = aws_endpoint.split('/')[2]
+    auth_hdr = authenticate.resign(request, new_host)
     headers = {k:request.headers[k] for k in ['X-Amz-Date', 'X-Amz-Target', 'Content-Type']}
     headers["Authorization"] = auth_hdr
     response = requests.post(aws_endpoint, data=request.data, headers=headers)

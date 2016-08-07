@@ -59,7 +59,7 @@ def authenticate(request):
         return None
     return key_id 
 
-def resign(request):
+def resign(request, newhost):
     auth = request.headers['Authorization']
     amzdate = request.headers['X-Amz-Date']
     algorithm = auth.split(' ')[0]
@@ -77,7 +77,9 @@ def resign(request):
 
     canonical_uri = request.path
     canonical_querystring = request.query_string
-    canonical_headers = '\n'.join(k.lower() + ':' + v for k, v in sorted(request.headers.items()) if k.lower() in signed_headers.split(';')) + '\n'
+    headers_to_sign = {k.lower(): v for k, v in request.headers.items() if k.lower() in signed_headers.split(';')}
+    headers_to_sign['host'] = newhost
+    canonical_headers = '\n'.join(k + ':' + v for k, v in sorted(headers_to_sign.items())) + '\n'
 
     payload_hash = hashlib.sha256(request_parameters).hexdigest()
     canonical_request = method + '\n' + canonical_uri + '\n' + canonical_querystring + '\n' + canonical_headers + '\n' + signed_headers + '\n' + payload_hash
