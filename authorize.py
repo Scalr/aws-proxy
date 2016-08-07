@@ -2,7 +2,7 @@ import sys
 import authenticate
 
 db_groups = {
-    'dummy.user': [ 'group2']
+    'dummy.user': [ 'group1']
 }
 
 all_actions = [ 'CreateCluster',
@@ -89,7 +89,7 @@ db_policies = [
                 'target_group': 'group1',
                 'args':
                 {
-                    'ports': ['80','110']
+                    'ports': ['80','110-120']
                 }
             },
             {
@@ -107,8 +107,8 @@ db_policies = [
 def policy_authorized_ports(request,args):
     ports = args['ports']
     containerDefs = request.get_json(force=True)['containerDefinitions']
-    port_requested = [portMapping['hostPort'] for cont in containerDefs for portMapping in cont['portMappings'] if 'portMapping' in cont ]
-    portnum = [x in l for l in [[int(a)]  if '-' not in a else range(int(a.split('-')[0]), int(a.split('-')[1]) + 1) for a in ports ] ]
+    port_requested = [portMapping['hostPort'] for cont in containerDefs for portMapping in cont['portMappings'] if 'portMappings' in cont ]
+    portnum = [x for l in [[int(a)]  if '-' not in a else range(int(a.split('-')[0]), int(a.split('-')[1]) + 1) for a in ports ] for x in l ]
     return  set(port_requested) < set (portnum)
 
 def policy_forbid_privileged(request,args):
@@ -153,7 +153,7 @@ def authorize(request,username):
     groups = db_groups[username]
     policies_to_apply = {}
     for p in db_policies:
-        if p['target_group'] in groups:
+        if p['target_group'] in groups and actionName in db_policy_types[p['type']]['target_actions']:
             if not p['type'] in policies_to_apply:
                 policies_to_apply[p['type']] = [p]
             else:
