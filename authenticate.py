@@ -26,7 +26,7 @@ def extract_from_auth(header, desc):
 
 def authenticate(request):
     host = request.headers['Host']
-    auth = request.headers['Authorization'].split(' ')
+    auth = request.headers['Authorization']
     amz_date = request.headers['X-Amz-Date']
     print 'Auth:', auth
     algorithm = auth[0]

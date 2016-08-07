@@ -1,16 +1,17 @@
 from flask import Flask
 from flask import request
+from flask import make_response
 import authenticate
 import authorize
 app = Flask(__name__)
 
 def build_response_not_authenticated(request):
-    response = Flask.make_response()
+    response = make_response()
     response.status_code = 400
     return response
 
 def build_response_not_authorized(request):
-    response = Flask.make_response()
+    response = make_response('')
     response.status_code = 400
     return response
 
@@ -24,7 +25,7 @@ def handle_query():
         print 'this request is not authenticated'
         return build_response_not_authenticated(request)
     if not authorize.authorize(request,userName):
-        print 'this action is not authorized for %s' % username
+        print 'this action is not authorized for %s' % userName
         return build_response_not_authorized(request)
     return forward_and_resign(request)
 
