@@ -56,7 +56,7 @@ def authenticate(request):
 
     canonical_uri = request.path
     canonical_querystring = request.query_string
-    canonical_headers = '\n'.join(k.lower() + ': ' + v for k, v in sorted(request.headers.items()) if k.lower() in signed_headers.split(';')) + '\n'
+    canonical_headers = '\n'.join(k.lower() + ':' + v for k, v in sorted(request.headers.items()) if k.lower() in signed_headers.split(';')) + '\n'
 
     print canonical_headers
     print canonical_uri
