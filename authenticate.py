@@ -38,8 +38,12 @@ def authenticate(request):
     cred = extract_from_auth(auth, 'Credential')
     key_id, credential_scope = cred.split('/', 1)
     datestamp, region, service, _ = credential_scope.split('/')
+
+    print host, amzdate, key_id, datestamp, region, service
+
     if not key_id in users:
         return None
+
 
     method = request.method
     amz_target = request.headers['X-Amz-Target']
@@ -48,9 +52,18 @@ def authenticate(request):
     signed_headers = extract_from_auth(auth, 'SignedHeaders')
     given_sig = extract_from_auth(auth, 'Signature')
 
+    print method, amz_target, signed_headers
+
     canonical_uri = request.path
     canonical_querystring = request.query_string
     canonical_headers = '\n'.join(k.lower() + ': ' + v for k, v in sorted(request.headers.items()) if k in signed_headers.split(';')) + '\n'
+
+    print canonical_headers
+    print canonical_uri
+    print canonical_querystring
+
+    print request_parameters
+    
     payload_hash = hashlib.sha256(request_parameters).hexdigest()
     canonical_request = method + '\n' + canonical_uri + '\n' + canonical_querystring + '\n' + canonical_headers + '\n' + signed_headers + '\n' + payload_hash
     string_to_sign = algorithm + '\n' +  amzdate + '\n' +  credential_scope + '\n' +  hashlib.sha256(canonical_request).hexdigest()
