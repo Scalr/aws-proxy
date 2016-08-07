@@ -1,30 +1,35 @@
 import sys
 import authenticate
-db_groups = {'dummy.user':['group1','group2']}
-db_policy_types = {
-                'location':
-                    {
-                    'target_actions':['CreateCluster']
-                    }
-                }
 
-db_policies = [{
-                'type':'location',
-                'target_group':'group1',
-                'args':
+db_groups = {
+    'dummy.user': ['group1', 'group2']
+}
+db_policy_types = {
+                    'location':
                     {
-                    'allowed_locations':['us-east-1']
+                        'target_actions': ['CreateCluster'],
+                        'failure_message': 'You do not have access to this region.'
                     }
+                  }
+
+db_policies = [
+            {
+                'type': 'location',
+                'target_group': 'group1',
+                'args':
+                {
+                    'allowed_locations': ['us-east-1no']
+                }
             },
             {
-                'type':'location',
-                'target_group':'group2',
+                'type': 'location',
+                'target_group': 'group2',
                 'args':
-                    {
-                    'allowed_locations':['us-west-1']
-                    }
+                {
+                    'allowed_locations': ['us-west-1']
+                }
             }
-            ]
+        ]
 
 def get_region_from_request(request):
     authstring = request.headers['Authorization']
@@ -48,13 +53,15 @@ def authorize(request,username):
             else:
                 policies_to_apply[p['type']].append(p)
     res = True
+    error_message = ''
     for ptype in policies_to_apply:
         res2 = False
         for p in policies_to_apply[ptype]:
             res2 = res2 or getattr(sys.modules[__name__],'policy_'+ptype)(request,p['args'])
         if not res2:
-            print 'Request blocked by policy: ',ptype
+            print 'Request blocked by policy: ', ptype
+            error_message = db_policy_types[ptype]['failure_message']
             res = False
             break
 
-    return res
+    return res, error_message

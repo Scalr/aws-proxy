@@ -1,6 +1,7 @@
 from flask import Flask
 from flask import request
 from flask import make_response
+import json
 import requests
 import authenticate
 import authorize
@@ -10,13 +11,13 @@ aws_endpoint = "https://ecs.{region}.amazonaws.com/"
 app = Flask(__name__)
 
 def build_response_not_authenticated(request):
-    response = make_response()
-    response.status_code = 400
+    response = make_response(json.dumps({'message':'Authentication failure'}))
+    response.status_code = 403
     return response
 
-def build_response_not_authorized(request):
-    response = make_response('You are not allowed to perform this operation')
-    response.status_code = 400
+def build_response_not_authorized(request, message):
+    response = make_response(json.dumps({'message': message}))
+    response.status_code = 403
     return response
 
 def forward_and_resign(request):
@@ -37,9 +38,10 @@ def handle_query():
     if userName is None:
         print 'this request is not authenticated'
         return build_response_not_authenticated(request)
-    if not authorize.authorize(request,userName):
+    authorized, error = authorize.authorize(request,userName)
+    if not authorized:
         print 'this action is not authorized for %s' % userName
-        return build_response_not_authorized(request)
+        return build_response_not_authorized(request, error)
     return forward_and_resign(request)
 
 if __name__=='__main__':

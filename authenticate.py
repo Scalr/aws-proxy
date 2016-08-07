@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import sys, os, base64, datetime, hashlib, hmac 
+import sys, os, base64, datetime, hashlib, hmac
 import requests
 
 users = {
