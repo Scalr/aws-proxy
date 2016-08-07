@@ -14,6 +14,11 @@ db_policy_types = {
                     {
                         'target_actions': ['RegisterTaskDefinition'],
                         'failure_message': 'You are not allowed to register a task definition with a privileged container'
+                    },
+                    'image_source':
+                    {
+                        'target_actions': ['RegisterTaskDefinition'],
+                        'failure_message': 'You are not allowed to pull images from this repository.'
                     }
                   }
 
@@ -58,6 +63,20 @@ def get_region_from_request(request):
 def policy_location(request,args):
     allowed_locations = args['allowed_locations']
     return get_region_from_request(request) in allowed_locations
+
+def policy_image_source(request, args):
+    allowed_sources = args['sources']
+    if '*' in allowed_sources:
+        return True
+    containerDefs = request.data['containerDefinitions']
+    for c in containerDefs:
+        image = c['image']
+        if image.find('/') == -1:
+            return False
+        source = image[:image.find('/')]
+        if not source in allowed_sources:
+            return False
+    return True
 
 def authorize(request,username):
     actionName = request.headers['X-Amz-Target'].split('.')[1]
