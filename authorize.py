@@ -19,6 +19,11 @@ db_policy_types = {
                     {
                         'target_actions': ['RegisterTaskDefinition'],
                         'failure_message': 'You are not allowed to pull images from this repository.'
+                    },
+                    'authorized_ports':
+                    {
+                        'target_actions': ['RegisterTaskDefinition'],
+                        'failure_message': 'You are not allowed to map the requested ports'
                     }
                   }
 
@@ -43,8 +48,23 @@ db_policies = [
                 'type': 'forbid_privileged',
                 'target_group': 'group1',
                 'args':{}
+            },
+            {
+                'type': 'authorized_ports',
+                'target_group': 'group1',
+                'args':
+                {
+                    'ports': ['80','110']
+                }
             }
         ]
+
+def policy_authorized_ports(request,args):
+    ports = args['ports']
+    containerDefs = request.get_json(force=True)['containerDefinitions']
+    port_requested = [portMapping['hostPort'] for cont in containerDefs for portMapping in  cont['portMappings'] ]
+    portnum = [x in l for l in [[int(a)]  if '-' not in a else range(int(a.split('-')[0]), int(a.split('-')[1]) + 1) for a in ports ] ]
+    return  set(port_requested) < set (portnum)
 
 def policy_forbid_privileged(request,args):
     if 'containerDefinitions' not in request.get_json(force=True):
