@@ -29,7 +29,7 @@ def authenticate(request):
     auth = request.headers['Authorization']
     amz_date = request.headers['X-Amz-Date']
     print 'Auth:', auth
-    algorithm = auth[0]
+    algorithm = auth.split(' ')[0]
     if algorithm != 'AWS4-HMAC-SHA256':
         return 'Error: unsupported signing scheme'
     cred = extract_from_auth(auth, 'Credential')
