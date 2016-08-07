@@ -5,7 +5,7 @@ import requests
 import authenticate
 import authorize
 
-aws_endpoint = "https://ecs.us-east-1.amazonaws.com/"
+aws_endpoint = "https://ecs.{region}.amazonaws.com/"
 
 app = Flask(__name__)
 
@@ -20,11 +20,12 @@ def build_response_not_authorized(request):
     return response
 
 def forward_and_resign(request):
-    new_host = aws_endpoint.split('/')[2]
+    aws_real_endpoint = aws_endpoint.format(region=authorize.get_region_from_request(request))
+    new_host = aws_real_endpoint.split('/')[2]
     auth_hdr = authenticate.resign(request, new_host)
     headers = {k:request.headers[k] for k in ['X-Amz-Date', 'X-Amz-Target', 'Content-Type']}
     headers["Authorization"] = auth_hdr
-    response = requests.post(aws_endpoint, data=request.data, headers=headers)
+    response = requests.post(aws_real_endpoint, data=request.data, headers=headers)
     print response.text
     final_response = make_response(response.text)
     final_response.status_code = response.status_code
@@ -42,4 +43,4 @@ def handle_query():
     return forward_and_resign(request)
 
 if __name__=='__main__':
-    app.run()
+    app.run(debug=True)
