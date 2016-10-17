@@ -125,6 +125,12 @@ def get_region_from_request(request):
     cred = authenticate.extract_from_auth(authstring,'Credential')
     return cred.split('/')[2]
 
+def get_endpoint_from_request(request):
+    authstring = request.headers['Authorization']
+    cred = authenticate.extract_from_auth(authstring,'Credential')
+    print('Cred', cred)
+    return 'https://{1}.{0}.amazonaws.com/'.format(*cred.split('/')[2:4])
+
 def policy_location(request,args):
     allowed_locations = args['allowed_locations']
     return get_region_from_request(request) in allowed_locations

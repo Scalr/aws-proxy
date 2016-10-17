@@ -83,7 +83,7 @@ def resign(request, newhost):
 
     payload_hash = hashlib.sha256(request_parameters).hexdigest()
     canonical_request = method + '\n' + canonical_uri + '\n' + canonical_querystring + '\n' + canonical_headers + '\n' + signed_headers + '\n' + payload_hash
-    print 'Canonical Request: ',canonical_request
+    print 'Canonical Request: ', canonical_request
     string_to_sign = algorithm + '\n' +  amzdate + '\n' +  credential_scope + '\n' +  hashlib.sha256(canonical_request).hexdigest()
     print 'String to sign:', string_to_sign
     signing_key = getSignatureKey(secret_key, datestamp, region, service)
